@@ -1,3 +1,12 @@
+thumbor (3.10.0) unstable; urgency=low
+
+  * Thumbor now reports expected errors as warning, instead of errors.
+  * There's two new configuration keys: HTTP_LOADER_DEFAULT_USER_AGENT and HTTP_LOADER_FORWARD_USER_AGENT.
+  * Thumbor now features a grayscale filter.
+  * Code reformatting to conform to PEP-8.
+
+ -- Paulo Sousa <paulo.sousa@corp.globo.com>  Wed, 15 May 2013 14:55:54 +0200
+
 thumbor (3.9.4) unstable; urgency=low
 
   * Upgraded Pillow dependency to 2.0.0;
