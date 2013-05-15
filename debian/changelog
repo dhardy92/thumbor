@@ -1,3 +1,28 @@
+thumbor (3.9.4) unstable; urgency=low
+
+  * Upgraded Pillow dependency to 2.0.0;
+  * Normalized the Max Age header for images with smart detection errors. 
+  * Fixed an issue with sentry error handler
+  * New the http handler requests images. 
+
+ -- Paulo Sousa <paulo.sousa@corp.globo.com>  Thu, 18 Apr 2013 10:56:45 +0200
+
+thumbor (3.9.3) unstable; urgency=low
+
+  * Fixes #165. Setting the ALLOW_ANIMATED_GIFS configuration to False will remove the experimental support for animated gifs.
+  * Makes error handling a little safer.
+  * Logging format can now be configured using THUMBOR_LOG_FORMAT and THUMBOR_LOG_DATE_FORMAT configuration variables. These are just passed through to python's format and datefmt arguments of the logging.basicConfig method.
+
+ -- Paulo Sousa <paulo.sousa@corp.globo.com>  Mon, 15 Apr 2013 16:00:04 +0200
+
+thumbor (3.8.1) unstable; urgency=low
+
+  * Fixes #175. Thumbor now support custom error handling. This can be very useful for users that have a centralized error application (like sentry).
+  * Sentry's custom error handler comes built-in with thumbor.
+  * Optimized fill filter, which is now implemented in C (by fabiomcosta).
+
+ -- Paulo Sousa <paulo.sousa@corp.globo.com>  Wed, 27 Mar 2013 00:00:00 +0100
+
 thumbor (3.7.1) unstable; urgency=low
 
   * Fix bug with quoting valid characters in URL (by cdemonchy);
