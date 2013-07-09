@@ -1,3 +1,13 @@
+thumbor (3.12.0) unstable; urgency=low
+
+  * Fixed an issue with animated gifs (sigh);
+  * Add detection support for WEBP format. Merge pull request #194 from dhardy92:feature_Add_WEBP_Detection;
+  * Support for the new release of Pillow (2.1.0) and works with Pillow master branch for now.
+  * Added a configuration PRESERVE_EXIF_INFO that when set to True will keep the exif metadata 
+    in images intact (including webp resulting images)
+
+ -- Paulo Sousa <paulo.sousa@corp.globo.com>  Tue, 09 Jul 2013 14:59:12 +0200
+
 thumbor (3.10.0) unstable; urgency=low
 
   * Thumbor now reports expected errors as warning, instead of errors.
