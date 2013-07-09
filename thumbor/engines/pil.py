@@ -11,7 +11,7 @@
 import os
 from tempfile import mkstemp
 from subprocess import Popen, PIPE
-from cStringIO import StringIO
+from io import BytesIO
 
 from PIL.ExifTags import TAGS
 from PIL import Image, ImageFile, ImageDraw, ImageSequence
@@ -31,7 +31,8 @@ FORMATS = {
     '.jpg': 'JPEG',
     '.jpeg': 'JPEG',
     '.gif': 'GIF',
-    '.png': 'PNG'
+    '.png': 'PNG',
+    '.webp': 'WEBP'
 }
 
 ImageFile.MAXBLOCK = 2 ** 25
@@ -44,7 +45,7 @@ class Engine(BaseEngine):
         return img
 
     def create_image(self, buffer):
-        img = Image.open(StringIO(buffer))
+        img = Image.open(BytesIO(buffer))
         self.icc_profile = img.info.get('icc_profile', None)
 
         if self.context.config.ALLOW_ANIMATED_GIFS and self.extension == '.gif':
@@ -98,7 +99,7 @@ class Engine(BaseEngine):
         if quality is None:
             quality = self.context.request.quality
         #returns image buffer in byte format.
-        img_buffer = StringIO()
+        img_buffer = BytesIO()
 
         ext = extension or self.extension
         options = {
@@ -111,12 +112,26 @@ class Engine(BaseEngine):
         if self.icc_profile is not None:
             options['icc_profile'] = self.icc_profile
 
+        if self.context.config.PRESERVE_EXIF_INFO:
+            exif = self.image.info.get('exif', None)
+            if exif is not None:
+                options['exif'] = exif
+
+        image_format = self.context.request.format
+        if image_format is None:
+            image_format = FORMATS[ext]
+        image_format = str(image_format).upper()
+
         try:
-            self.image.save(img_buffer, FORMATS[ext], **options)
+            if image_format == 'WEBP' and self.image.mode in ['L', 'LA', 'P', 'RGBA']:
+                self.image = self.image.convert('RGB')
+
+            self.image.save(img_buffer, image_format, **options)
         except IOError:
-            logger.warning('Could not save as improved image, consider to increase ImageFile.MAXBLOCK')
+            logger.exception('Could not save as improved image, consider to increase ImageFile.MAXBLOCK')
             self.image.save(img_buffer, FORMATS[ext])
         except KeyError:
+            logger.exception('Image format not found in PIL: %s' % image_format)
             #extension is not present or could not help determine format => force JPEG
             #TODO : guess format by image headers maybe
             if self.image.mode in ['P', 'RGBA', 'LA']:
@@ -132,7 +147,7 @@ class Engine(BaseEngine):
 
     def read_multiple(self, images, extension=None):
         gifWriter = GifWriter()
-        img_buffer = StringIO()
+        img_buffer = BytesIO()
 
         duration = []
         converted_images = []

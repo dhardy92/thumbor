@@ -47,7 +47,7 @@ class Engine(BaseEngine):
 
     def resize(self, width, height):
         thumbnail = cv.CreateMat(int(round(height, 0)), int(round(width, 0)), cv.CV_8UC3)
-        cv.Resize(self.image, thumbnail)
+        cv.Resize(self.image, thumbnail, cv.CV_INTER_AREA)
         self.image = thumbnail
 
     def crop(self, left, top, right, bottom):
@@ -60,10 +60,10 @@ class Engine(BaseEngine):
         self.image = cropped
 
     def flip_vertically(self):
-        raise NotImplementedError()
+        cv.Flip(self.image, None, 1)
 
     def flip_horizontally(self):
-        raise NotImplementedError()
+        cv.Flip(self.image, None, 0)
 
     def read(self, extension=None, quality=None):
         if quality is None:

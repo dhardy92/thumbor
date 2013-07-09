@@ -42,6 +42,10 @@ Config.define(
     'Ignore errors during smart detections and return image as a temp image (not saved in result storage and with MAX_AGE_TEMP_IMAGE age)', 'Imaging')
 
 Config.define(
+    'PRESERVE_EXIF_INFO', False,
+    'Preserves exif information in generated images. Increases image size in kbytes, use with caution.', 'Imaging')
+
+Config.define(
     'ALLOW_ANIMATED_GIFS', True,
     'Indicates whether thumbor should enable the EXPERIMENTAL support for animated gifs.', 'Imaging')
 
@@ -170,7 +174,22 @@ Config.define(
 
 # AVAILABLE FILTERS
 Config.define(
-    'FILTERS', [],
+    'FILTERS', [
+        'thumbor.filters.brightness',
+        'thumbor.filters.contrast',
+        'thumbor.filters.rgb',
+        'thumbor.filters.round_corner',
+        'thumbor.filters.quality',
+        'thumbor.filters.noise',
+        'thumbor.filters.watermark',
+        'thumbor.filters.equalize',
+        'thumbor.filters.fill',
+        'thumbor.filters.sharpen',
+        'thumbor.filters.strip_icc',
+        'thumbor.filters.frame',
+        'thumbor.filters.grayscale',
+        'thumbor.filters.format',
+    ],
     'List of filters that thumbor will allow to be used in generated images. All of them must be ' +
     'full names of python modules (python must be able to import it)', 'Filters')
 

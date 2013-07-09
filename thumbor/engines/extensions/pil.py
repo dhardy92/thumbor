@@ -191,6 +191,7 @@ class GifWriter:
 
         # packed field: local color table flag1, interlace0, sorted table0,
         # reserved00, lct size111=7=2^(7+1)=256.
+
         bb += '\x87'
 
         # LZW minimum size code now comes later, begining of [image data] blocks
@@ -393,7 +394,8 @@ class GifWriter:
         # Obtain palette for all images and count each occurance
         palettes, occur = [], []
         for im in images:
-            palettes.append(getheader(im)[1])
+            header, usedPaletteColors = getheader(im)
+            palettes.append(header[-1])  # Last part of the header is the frame palette
         for palette in palettes:
             occur.append(palettes.count(palette))
 
