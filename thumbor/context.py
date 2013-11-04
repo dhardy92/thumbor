@@ -11,6 +11,7 @@
 from os.path import abspath, exists
 
 from thumbor.filters import FiltersFactory
+from thumbor.url import Url
 
 
 class Context:
@@ -98,7 +99,9 @@ class RequestParameters:
                  buffer=None,
                  focal_points=None,
                  unsafe=False,
-                 hash=None):
+                 hash=None,
+                 accepts_webp=False,
+                 request=None):
 
         self.debug = bool(debug)
         self.meta = bool(meta)
@@ -144,7 +147,6 @@ class RequestParameters:
         self.detection_error = None
         self.quality = quality
         self.buffer = None
-        self.extension = extension
 
         if focal_points is None:
             focal_points = []
@@ -152,8 +154,17 @@ class RequestParameters:
         self.focal_points = focal_points
         self.hash = hash
         self.prevent_result_storage = False
-        self.unsafe = unsafe
+        self.unsafe = unsafe == 'unsafe' or unsafe is True
         self.format = None
+        self.accepts_webp = accepts_webp
+        self.max_bytes = None
+
+        if request:
+            if request.query:
+                self.image_url += '?%s' % request.query
+            self.url = request.path
+            self.accepts_webp = 'image/webp' in request.headers.get('Accept', '')
+            self.image_url = Url.encode_url(self.image_url.encode('utf-8'))
 
     def int_or_0(self, value):
         return 0 if value is None else int(value)

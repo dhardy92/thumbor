@@ -14,12 +14,6 @@ from os.path import splitext
 import datetime
 import traceback
 
-try:
-    import magic
-    LIBMAGIC_AVAILABLE = True
-except ImportError:
-    LIBMAGIC_AVAILABLE = False
-
 import tornado.web
 
 from thumbor import __version__
@@ -27,6 +21,7 @@ from thumbor.storages.no_storage import Storage as NoStorage
 from thumbor.storages.mixed_storage import Storage as MixedStorage
 from thumbor.context import Context
 from thumbor.transformer import Transformer
+from thumbor.engines import BaseEngine
 from thumbor.engines.json_engine import JSONEngine
 from thumbor.utils import logger
 
@@ -46,12 +41,11 @@ class BaseHandler(tornado.web.RequestHandler):
             logger.warn(msg)
         self.finish()
 
-    def init_request_params(self):
-        self.context.request.quality = self.context.config.QUALITY
-        self.context.request.url = self.request.path
+    def head(self, *args, **kwargs):
+        self.set_status(204)
 
     def execute_image_operations(self):
-        self.init_request_params()
+        self.context.request.quality = self.context.config.QUALITY
 
         req = self.context.request
         conf = self.context.config
@@ -87,37 +81,7 @@ class BaseHandler(tornado.web.RequestHandler):
                 engine = self.context.modules.engine
                 engine.load(buffer, req.extension)
 
-            new_crops = None
-            if normalized and req.should_crop:
-                crop_left = req.crop['left']
-                crop_top = req.crop['top']
-                crop_right = req.crop['right']
-                crop_bottom = req.crop['bottom']
-
-                actual_width, actual_height = engine.size
-
-                if not req.width and not req.height:
-                    actual_width = engine.size[0]
-                    actual_height = engine.size[1]
-                elif req.width:
-                    actual_height = engine.get_proportional_height(engine.size[0])
-                elif req.height:
-                    actual_width = engine.get_proportional_width(engine.size[1])
-
-                new_crops = self.translate_crop_coordinates(
-                    engine.source_width,
-                    engine.source_height,
-                    actual_width,
-                    actual_height,
-                    crop_left,
-                    crop_top,
-                    crop_right,
-                    crop_bottom
-                )
-                req.crop['left'] = new_crops[0]
-                req.crop['top'] = new_crops[1]
-                req.crop['right'] = new_crops[2]
-                req.crop['bottom'] = new_crops[3]
+            self.normalize_crops(normalized, req, engine)
 
             if req.meta:
                 self.context.modules.engine = JSONEngine(engine, req.image_url, req.meta_callback)
@@ -126,6 +90,39 @@ class BaseHandler(tornado.web.RequestHandler):
             Transformer(self.context).transform(after_transform_cb)
 
         self._fetch(self.context.request.image_url, self.context.request.extension, callback)
+
+    def normalize_crops(self, normalized, req, engine):
+        new_crops = None
+        if normalized and req.should_crop:
+            crop_left = req.crop['left']
+            crop_top = req.crop['top']
+            crop_right = req.crop['right']
+            crop_bottom = req.crop['bottom']
+
+            actual_width, actual_height = engine.size
+
+            if not req.width and not req.height:
+                actual_width = engine.size[0]
+                actual_height = engine.size[1]
+            elif req.width:
+                actual_height = engine.get_proportional_height(engine.size[0])
+            elif req.height:
+                actual_width = engine.get_proportional_width(engine.size[1])
+
+            new_crops = self.translate_crop_coordinates(
+                engine.source_width,
+                engine.source_height,
+                actual_width,
+                actual_height,
+                crop_left,
+                crop_top,
+                crop_right,
+                crop_bottom
+            )
+            req.crop['left'] = new_crops[0]
+            req.crop['top'] = new_crops[1]
+            req.crop['right'] = new_crops[2]
+            req.crop['bottom'] = new_crops[3]
 
     def after_transform(self, context):
         finish_callback = functools.partial(self.finish_request, context)
@@ -149,21 +146,39 @@ class BaseHandler(tornado.web.RequestHandler):
             f.run(exec_one_filter)
         exec_one_filter()
 
-    def finish_request(self, context, result=None):
-        if context.request.meta:
-            context.request.meta_callback = context.config.META_CALLBACK_NAME or self.request.arguments.get('callback', [None])[0]
-            content_type = 'text/javascript' if context.request.meta_callback else 'application/json'
+    def define_image_type(self, context, result):
+        if result is not None:
+            image_extension = BaseEngine.get_mimetype(result)
+        elif context.config.AUTO_WEBP and context.request.accepts_webp and not context.modules.engine.is_multiple():
+            image_extension = '.webp'
         else:
             image_extension = context.request.format
             if image_extension is None:
-                image_extension = context.request.extension
+                image_extension = context.modules.engine.extension
+                logger.debug('No image format specified. Retrieving from the image extension: %s.' % image_extension)
             else:
                 image_extension = '.%s' % image_extension
+                logger.debug('Image format specified as %s.' % image_extension)
 
-            content_type = CONTENT_TYPE.get(image_extension, CONTENT_TYPE['.jpg'])
+        content_type = CONTENT_TYPE.get(image_extension, CONTENT_TYPE['.jpg'])
+
+        if context.request.meta:
+            context.request.meta_callback = context.config.META_CALLBACK_NAME or self.request.arguments.get('callback', [None])[0]
+            content_type = 'text/javascript' if context.request.meta_callback else 'application/json'
+            logger.debug('Metadata requested. Serving content type of %s.' % content_type)
+
+        logger.debug('Content Type of %s detected.' % content_type)
+
+        return image_extension, content_type
+
+    def finish_request(self, context, result=None):
+        image_extension, content_type = self.define_image_type(context, result)
 
         self.set_header('Content-Type', content_type)
         self.set_header('Server', 'Thumbor/%s' % __version__)
+
+        if context.config.AUTO_WEBP and not context.modules.engine.is_multiple() and context.modules.engine.extension != '.webp':
+            self.set_header('Vary', 'Accept')
 
         max_age = self.context.config.MAX_AGE
         if context.request.prevent_result_storage or context.request.detection_error:
@@ -173,9 +188,19 @@ class BaseHandler(tornado.web.RequestHandler):
             self.set_header('Cache-Control', 'max-age=' + str(max_age) + ',public')
             self.set_header('Expires', datetime.datetime.utcnow() + datetime.timedelta(seconds=max_age))
 
+        # needs to be decided before loading results from the engine
         should_store = result is None and (context.config.RESULT_STORAGE_STORES_UNSAFE or not context.request.unsafe)
+
         if result is None:
-            results = context.modules.engine.read(context.request.extension, context.request.quality)
+            results = context.modules.engine.read(image_extension, context.request.quality)
+            if context.request.max_bytes is not None:
+                results = self.reload_to_fit_in_kb(
+                    context.modules.engine,
+                    results,
+                    image_extension,
+                    context.request.quality,
+                    context.request.max_bytes
+                )
         else:
             results = result
 
@@ -185,6 +210,32 @@ class BaseHandler(tornado.web.RequestHandler):
         if should_store:
             if context.modules.result_storage and not context.request.prevent_result_storage:
                 context.modules.result_storage.put(results)
+
+    def reload_to_fit_in_kb(self, engine, initial_results, extension, initial_quality, max_bytes):
+        if extension not in ['.webp', '.jpg', '.jpeg'] or len(initial_results) <= max_bytes:
+            return initial_results
+
+        results = initial_results
+        quality = initial_quality
+
+        while len(results) > max_bytes:
+            quality = int(quality * 0.75)
+
+            if quality < 10:
+                logger.debug('Could not find any reduction that matches required size of %d bytes.' % max_bytes)
+                return initial_results
+
+            logger.debug('Trying to downsize image with quality of %d...' % quality)
+            results = engine.read(extension, quality)
+
+        prev_result = results
+        while len(results) <= max_bytes:
+            quality = int(quality * 1.1)
+            logger.debug('Trying to upsize image with quality of %d...' % quality)
+            prev_result = results
+            results = engine.read(extension, quality)
+
+        return prev_result
 
     @classmethod
     def translate_crop_coordinates(
@@ -248,12 +299,6 @@ class BaseHandler(tornado.web.RequestHandler):
                 callback(normalized, engine=engine)
 
             self.context.modules.loader.load(self.context, url, handle_loader_loaded)
-
-    def get_mimetype(self, body):
-        if LIBMAGIC_AVAILABLE:
-            return magic.from_buffer(body, True)
-
-        return None
 
 
 class ContextHandler(BaseHandler):

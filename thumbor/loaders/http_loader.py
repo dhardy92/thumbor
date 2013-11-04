@@ -16,8 +16,6 @@ import tornado.httpclient
 
 from thumbor.utils import logger
 
-http_client = None
-
 
 def _normalize_url(url):
     return url if url.startswith('http') else 'http://%s' % url
@@ -52,9 +50,9 @@ def return_contents(response, url, callback):
 
 
 def load(context, url, callback):
-    client = http_client
-    if client is None:
-        client = tornado.httpclient.AsyncHTTPClient()
+    if context.config.HTTP_LOADER_PROXY_HOST and context.config.HTTP_LOADER_PROXY_PORT:
+        tornado.httpclient.AsyncHTTPClient.configure("tornado.curl_httpclient.CurlAsyncHTTPClient")
+    client = tornado.httpclient.AsyncHTTPClient()
 
     user_agent = None
     if context.config.HTTP_LOADER_FORWARD_USER_AGENT:
@@ -65,12 +63,19 @@ def load(context, url, callback):
 
     url = _normalize_url(url)
     req = tornado.httpclient.HTTPRequest(
-        url=url,
+        url=encode(url),
         connect_timeout=context.config.HTTP_LOADER_CONNECT_TIMEOUT,
         request_timeout=context.config.HTTP_LOADER_REQUEST_TIMEOUT,
         follow_redirects=context.config.HTTP_LOADER_FOLLOW_REDIRECTS,
         max_redirects=context.config.HTTP_LOADER_MAX_REDIRECTS,
-        user_agent=user_agent
+        user_agent=user_agent,
+        proxy_host=encode(context.config.HTTP_LOADER_PROXY_HOST),
+        proxy_port=context.config.HTTP_LOADER_PROXY_PORT,
+        proxy_username=encode(context.config.HTTP_LOADER_PROXY_USERNAME),
+        proxy_password=encode(context.config.HTTP_LOADER_PROXY_PASSWORD)
     )
 
     client.fetch(req, callback=partial(return_contents, url=url, callback=callback))
+
+def encode(string):
+    return None if string is None else string.encode('ascii')

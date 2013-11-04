@@ -8,6 +8,11 @@
 # http://www.opensource.org/licenses/mit-license
 # Copyright (c) 2011 globo.com timehome@corp.globo.com
 
-'''This is the main module in thumbor'''
+from thumbor.filters import BaseFilter, filter_method
 
-__version__ = "3.14.7"
+
+class Filter(BaseFilter):
+
+    @filter_method(BaseFilter.PositiveNumber)
+    def max_bytes(self, value):
+        self.context.request.max_bytes = int(value)

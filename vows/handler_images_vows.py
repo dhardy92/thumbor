@@ -7,7 +7,7 @@
 # Licensed under the MIT license:
 # http://www.opensource.org/licenses/mit-license
 # Copyright (c) 2011 globo.com timehome@corp.globo.com
-from thumbor.storages.file_storage import Storage as FileStorage
+
 from os.path import abspath, join, dirname
 
 from pyvows import Vows, expect
@@ -17,6 +17,8 @@ from thumbor.app import ThumborServiceApp
 from thumbor.importer import Importer
 from thumbor.config import Config
 from thumbor.context import Context, ServerParameters
+from thumbor.engines.pil import Engine as PILEngine
+from thumbor.storages.file_storage import Storage as FileStorage
 
 storage_path = abspath(join(dirname(__file__), 'fixtures/'))
 
@@ -226,3 +228,60 @@ class GetImageWithStoredKeys(BaseContext):
         def should_be_200(self, response):
             code, _ = response
             expect(code).to_equal(200)
+
+
+@Vows.batch
+class GetImageWithAutoWebP(BaseContext):
+    def get_app(self):
+        cfg = Config(SECURITY_KEY='ACME-SEC')
+        cfg.LOADER = "thumbor.loaders.file_loader"
+        cfg.FILE_LOADER_ROOT_PATH = storage_path
+        cfg.AUTO_WEBP = True
+
+        importer = Importer(cfg)
+        importer.import_modules()
+        server = ServerParameters(8889, 'localhost', 'thumbor.conf', None, 'info', None)
+        server.security_key = 'ACME-SEC'
+        ctx = Context(server, cfg, importer)
+        application = ThumborServiceApp(ctx)
+
+        self.engine = PILEngine(ctx)
+
+        return application
+
+    class CanConvertJPEG(BaseContext):
+        def topic(self):
+            return self.get('/unsafe/image.jpg', headers={
+                "Accept": 'image/webp,*/*;q=0.8'
+            })
+
+        def should_be_webp(self, response):
+            expect(response.code).to_equal(200)
+            expect(response.headers).to_include('Vary')
+            expect(response.headers['Vary']).to_include('Accept')
+
+            image = self.engine.create_image(response.body)
+            expect(image.format.lower()).to_equal('webp')
+
+    class ShouldNotConvertWebPImage(BaseContext):
+        def topic(self):
+            return self.get('/unsafe/image.webp', headers={
+                "Accept": 'image/webp,*/*;q=0.8'
+            })
+
+        def should_not_have_vary(self, response):
+            expect(response.code).to_equal(200)
+            expect(response.headers).not_to_include('Vary')
+
+    class ShouldNotConvertAnimatedGif(BaseContext):
+        def topic(self):
+            return self.get('/unsafe/animated_image.gif', headers={
+                "Accept": 'image/webp,*/*;q=0.8'
+            })
+
+        def should_not_be_webp(self, response):
+            expect(response.code).to_equal(200)
+            expect(response.headers).not_to_include('Vary')
+
+            image = self.engine.create_image(response.body)
+            expect(image.format.lower()).to_equal('gif')
