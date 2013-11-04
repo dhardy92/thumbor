@@ -1,3 +1,16 @@
+thumbor (3.14.7) unstable; urgency=low
+
+  * Merged #197. Healthcheck now replied to HEAD requests.
+  * Fixes #204. Thumbor now allows users to specify that WebP should be automatically used whenever the request has the proper Accept header (image/webp).
+  * Added some extra logging to the finish request stage of the image handling.
+  * Merged #202. Proxy support added to default HTTP Loader.
+  * Fixed #193. File storage now uses atomic storage of files, thus avoiding corruption of stored images.
+  * A new filter has been introduced: max_bytes
+  * Thumbor now includes a "Vary": "Accept" header
+  * Not doing vary header or converting to WebP when image is an animated gif or already a WebP
+
+ -- Damien Hardy <dhardy@smtp.gmail.com>  Mon, 04 Nov 2013 15:52:39 +0100
+
 thumbor (3.12.0) unstable; urgency=low
 
   * Fixed an issue with animated gifs (sigh);
