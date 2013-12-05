@@ -1,3 +1,12 @@
+thumbor (3.15.0-1) unstable; urgency=low
+
+  * Merged #215. File error handling
+  * Merged #219 HEAD return 200 on healthcheck instead of 201
+  * Fix parsing filter of thumbor image of thumbor image
+  * WebP quality config
+
+ -- Damien Hardy <dhardy@smtp.gmail.com>  Thu, 05 Dec 2013 14:52:35 +0100
+
 thumbor (3.14.7) unstable; urgency=low
 
   * Merged #197. Healthcheck now replied to HEAD requests.
