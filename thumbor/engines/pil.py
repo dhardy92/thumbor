@@ -13,12 +13,11 @@ from tempfile import mkstemp
 from subprocess import Popen, PIPE
 from io import BytesIO
 
-from PIL.ExifTags import TAGS
 from PIL import Image, ImageFile, ImageDraw, ImageSequence
 
 from thumbor.engines import BaseEngine
 from thumbor.engines.extensions.pil import GifWriter
-from thumbor.utils import logger
+from thumbor.utils import logger, deprecated
 
 try:
     from thumbor.ext.filters import _composite
@@ -49,12 +48,14 @@ class Engine(BaseEngine):
 
     def create_image(self, buffer):
         img = Image.open(BytesIO(buffer))
-        self.icc_profile = img.info.get('icc_profile', None)
+        self.icc_profile = img.info.get('icc_profile')
+        self.transparency = img.info.get('transparency')
+        self.exif = img.info.get('exif')
 
         if self.context.config.ALLOW_ANIMATED_GIFS and self.extension == '.gif':
             frames = []
             for frame in ImageSequence.Iterator(img):
-                frames.append(frame.convert())
+                frames.append(frame.convert('P'))
             img.seek(0)
             return frames
 
@@ -65,18 +66,6 @@ class Engine(BaseEngine):
         d.rectangle([x, y, x + width, y + height])
 
         del d
-
-    @property
-    def exif(self):
-        """Get embedded EXIF data from image file."""
-        ret = {}
-        if hasattr(self.image, '_getexif'):
-            exifinfo = self.image._getexif()
-            if exifinfo is not None:
-                for tag, value in exifinfo.items():
-                    decoded = TAGS.get(tag, tag)
-                    ret[decoded] = value
-        return ret
 
     def resize(self, width, height):
         self.image = self.image.resize((int(width), int(height)), Image.ANTIALIAS)
@@ -112,8 +101,13 @@ class Engine(BaseEngine):
             options['optimize'] = True
             options['progressive'] = True
 
-            if quality is None:
-                options['quality'] = 'keep'
+            if self.image.mode in ['L', 'CMYK']:
+                self.image = self.image.convert('RGB')
+            else:
+                if self.extension == '.jpg':
+                    quantization = getattr(self.image, 'quantization', None)
+                    if quality is None and quantization and 2 <= len(quantization) <= 4:
+                        options['quality'] = 'keep'
 
         if options['quality'] is None:
             options['quality'] = self.context.config.QUALITY
@@ -122,9 +116,11 @@ class Engine(BaseEngine):
             options['icc_profile'] = self.icc_profile
 
         if self.context.config.PRESERVE_EXIF_INFO:
-            exif = self.image.info.get('exif', None)
-            if exif is not None:
-                options['exif'] = exif
+            if self.exif is not None:
+                options['exif'] = self.exif
+
+        if self.image.mode == 'P' and self.transparency:
+            options['transparency'] = self.transparency
 
         try:
             if ext == '.webp':
@@ -133,6 +129,9 @@ class Engine(BaseEngine):
                     if self.image.mode != 'P':
                         mode = 'RGBA' if self.image.mode[-1] == 'A' else 'RGB'
                     self.image = self.image.convert(mode)
+
+            if ext == '.png' and self.image.mode == 'CMYK':
+                self.image = self.image.convert('RGBA')
 
             self.image.save(img_buffer, FORMATS[ext], **options)
         except IOError:
@@ -193,21 +192,27 @@ class Engine(BaseEngine):
 
         return results
 
-    def get_image_data(self, image=None):
-        if image is None:
-            return self.image.tostring()
-        else:
-            return image.tostring()
+    @deprecated("Use image_data_as_rgb instead.")
+    def get_image_data(self):
+        return self.image.tostring()
 
     def set_image_data(self, data):
         self.image.fromstring(data)
 
+    @deprecated("Use image_data_as_rgb instead.")
     def get_image_mode(self):
         return self.image.mode
 
-    def convert_to_rgb(self):
-        converted_image = self.image.convert('RGB')
-        return converted_image.mode, self.get_image_data(converted_image)
+    def image_data_as_rgb(self, update_image=True):
+        converted_image = self.image
+        if converted_image.mode not in ['RGB', 'RGBA']:
+            if 'A' in converted_image.mode:
+                converted_image = converted_image.convert('RGBA')
+            else:
+                converted_image = converted_image.convert('RGB')
+        if update_image:
+            self.image = converted_image
+        return converted_image.mode, converted_image.tostring()
 
     def convert_to_grayscale(self):
         if 'A' in self.image.mode:
@@ -230,9 +235,11 @@ class Engine(BaseEngine):
         if merge:
             sz = self.size
             other_size = other_engine.size
+            mode, data = self.image_data_as_rgb()
+            other_mode, other_data = other_engine.image_data_as_rgb()
             imgdata = _composite.apply(
-                self.get_image_mode(), self.get_image_data(), sz[0], sz[1],
-                other_engine.get_image_data(), other_size[0], other_size[1], pos[0], pos[1])
+                mode, data, sz[0], sz[1],
+                other_data, other_size[0], other_size[1], pos[0], pos[1])
             self.set_image_data(imgdata)
         else:
             image.paste(other_image, pos)

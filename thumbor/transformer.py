@@ -82,14 +82,25 @@ class Transformer(object):
 
     def transform(self, callback):
         self.done_callback = callback
-        self.reorientate()
+        if self.context.config.RESPECT_ORIENTATION:
+            self.engine.reorientate()
         self.trim()
         self.smart_detect()
 
     def trim(self):
         if self.context.request.trim is None or not trim_enabled:
             return
-        box = _bounding_box.apply(self.engine.get_image_mode(), self.engine.size[0], self.engine.size[1], self.context.request.trim_pos, self.context.request.trim_tolerance, self.engine.get_image_data())
+
+        mode, data = self.engine.image_data_as_rgb()
+        box = _bounding_box.apply(
+            mode,
+            self.engine.size[0],
+            self.engine.size[1],
+            self.context.request.trim_pos,
+            self.context.request.trim_tolerance,
+            data
+        )
+
         if box[2] < box[0] or box[3] < box[1]:
             logger.warn("Ignoring trim, there wouldn't be any image left, check the tolerance.")
             return
@@ -100,31 +111,6 @@ class Transformer(object):
             self.context.request.crop['top'] -= box[1]
             self.context.request.crop['right'] -= box[0]
             self.context.request.crop['bottom'] -= box[1]
-
-    def reorientate(self):
-        if self.context.config.RESPECT_ORIENTATION:
-            engine = self.context.modules.engine
-            if hasattr(engine, 'exif'):
-                if 'Orientation' in engine.exif:
-                    orientation = engine.exif['Orientation']
-                    if orientation == 2:
-                        engine.flip_horizontally()
-                    elif orientation == 3:
-                        engine.rotate(180)
-                    elif orientation == 4:
-                        engine.flip_vertically()
-                    elif orientation == 5:
-                        # Horizontal Mirror + Rotation 270
-                        engine.flip_vertically()
-                        engine.rotate(270)
-                    elif orientation == 6:
-                        engine.rotate(270)
-                    elif orientation == 7:
-                        # Vertical Mirror + Rotation 270
-                        engine.flip_horizontally()
-                        engine.rotate(270)
-                    elif orientation == 8:
-                        engine.rotate(90)
 
     @property
     def smart_storage_key(self):
@@ -154,7 +140,11 @@ class Transformer(object):
 
             logger.exception("Ignored error during smart detection")
             if self.context.config.USE_CUSTOM_ERROR_HANDLING:
-                self.context.modules.importer.error_handler.handle_error(context=self.context, handler=self.context.request_handler, exception=sys.exc_info())
+                self.context.modules.importer.error_handler.handle_error(
+                    context=self.context,
+                    handler=self.context.request_handler,
+                    exception=sys.exc_info()
+                )
 
             self.context.request.prevent_result_storage = True
             self.context.request.detection_error = True
@@ -228,8 +218,11 @@ class Transformer(object):
     def auto_crop(self):
         source_width, source_height = self.engine.size
 
+        target_height = self.target_height or 1
+        target_width = self.target_width or 1
+
         source_ratio = round(float(source_width) / source_height, 2)
-        target_ratio = round(float(self.target_width) / self.target_height, 2)
+        target_ratio = round(float(target_width) / target_height, 2)
 
         if source_ratio == target_ratio:
             return
@@ -238,9 +231,9 @@ class Transformer(object):
 
         if self.target_width / source_width > self.target_height / source_height:
             crop_width = source_width
-            crop_height = int(round(source_width * self.target_height / self.target_width, 0))
+            crop_height = int(round(source_width * self.target_height / target_width, 0))
         else:
-            crop_width = int(round(math.ceil(self.target_width * source_height / self.target_height), 0))
+            crop_width = int(round(math.ceil(self.target_width * source_height / target_height), 0))
             crop_height = source_height
 
         crop_left = int(round(min(max(focal_x - (crop_width / 2), 0.0), source_width - crop_width)))
@@ -277,13 +270,16 @@ class Transformer(object):
         source_width, source_height = self.engine.size
         if self.target_width == source_width and self.target_height == source_height:
             return
-        self.engine.resize(self.target_width, self.target_height)
+        self.engine.resize(self.target_width or 1, self.target_height or 1)  # avoiding 0px images
 
     def fit_in_resize(self):
         source_width, source_height = self.engine.size
 
         #invert width and height if image orientation is not the same as request orientation and need adaptive
-        if self.context.request.adaptive and ((source_width - source_height < 0 and self.target_width - self.target_height > 0) or (source_width - source_height > 0 and self.target_width - self.target_height < 0)):
+        if self.context.request.adaptive and (
+            (source_width - source_height < 0 and self.target_width - self.target_height > 0) or
+            (source_width - source_height > 0 and self.target_width - self.target_height < 0)
+        ):
             tmp = self.context.request.width
             self.context.request.width = self.context.request.height
             self.context.request.height = tmp

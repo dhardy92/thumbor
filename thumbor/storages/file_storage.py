@@ -61,6 +61,10 @@ class Storage(storages.BaseStorage):
 
         path = '%s.detectors.txt' % splitext(file_abspath)[0]
         temp_abspath = "%s.%s" % (path, str(uuid4()).replace('-', ''))
+
+        file_dir_abspath = dirname(file_abspath)
+        self.ensure_dir(file_dir_abspath)
+
         with open(temp_abspath, 'w') as _file:
             _file.write(dumps(data))
 
@@ -94,7 +98,7 @@ class Storage(storages.BaseStorage):
 
     def path_on_filesystem(self, path):
         digest = hashlib.sha1(path.encode('utf-8')).hexdigest()
-        return join(self.context.config.FILE_STORAGE_ROOT_PATH.rstrip('/'), digest[:2] + '/' + digest[2:])
+        return "%s/%s/%s" % (self.context.config.FILE_STORAGE_ROOT_PATH.rstrip('/'), digest[:2], digest[2:])
 
     def exists(self, path):
         n_path = self.path_on_filesystem(path)
