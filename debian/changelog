@@ -1,4 +1,4 @@
-thumbor (4.0.2-1) unstable; urgency=low
+thumbor (4.0.2-2) unstable; urgency=low
 
   * Fixed issue with WebP request path by Frank Du;
   * Fixed issue with Upstart Script Log Level by Matt Robenolt;
