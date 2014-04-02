@@ -1,3 +1,101 @@
+thumbor (4.0.2-3) unstable; urgency=low
+
+  * Fixed issue with WebP request path by Frank Du;
+  * Fixed issue with Upstart Script Log Level by Matt Robenolt;
+  * Fixed issue with folder not existing before storing security details by Cícero Verneck Corrêa;
+  * Fixed #272 - Thumbor works properly with newer tornado.
+  * Fixed issue #289 - Now URLs with '~' should work properly.
+  * Partitioning the FileStorage Result Storage into more folders by Martin Sarsale;
+  * Json File Error Handler by Damien Hardy;
+  * Support binding socket to file descriptor instead of port by John MacKenzie;
+  * HEAD queries to thumbor's healthcheck returning 200 status code by Damien Hardy;
+  * Fixed bug when parsing urls with filters of an original with filters by Cezar Sá;
+  * Support different default quality for WebP images by Bernardo Heynemann;
+  * Keep transparency when saving transparent gif by Igor Sobreira;
+  * Don't save PNG files as CMYK by Igor Sobreira;
+  * Upstart now uses ip var defined on ubuntu default file by Paulo Sousa;
+  * Fixed images cropped with width 1px and height 0px by Bernardo Heynemann;
+  * Fixed #236 - IndexError: list index out of range by Bernardo Heynemann;
+  * Fixed #235 - ValueError: Not a valid numbers of quantization tables. Should be between 2 and 4 by Bernardo Heynemann;
+  * Fixed #228 - Confusing error when using OpenCV by Bernardo Heynemann;
+  * New options to the fill filter by prolificphotis;
+  * Added FILL_MERGES Configuration to specify whether the fill filter should merge the background by prolificphotis;
+  * Resolved quality config None in graphicsmagick engine by Marcio Toshio Ide;
+  * Preserving EXIF info when storing original images by Cezar Sá;
+  * Resetting EXIF orientation after reorienting image by Cezar Sá;
+  * Compatibility work for the fill filter across engines by Cezar Sá;
+  * Pillow test_requirement match setup.py by Rob Olson;
+  * Fixed issues with graphicsmagick and gif images by Bernardo Heynemann;
+  * Convert to grayscale working in OpenCV Engine by Pablo Aguiar.
+
+ -- Damien Hardy <dhardy@viadeotem.com>  Wed, 26 Mar 2014 15:41:43 +0100
+
+thumbor (3.15.0-1) unstable; urgency=low
+
+  * Merged #215. File error handling
+  * Merged #219 HEAD return 200 on healthcheck instead of 201
+  * Fix parsing filter of thumbor image of thumbor image
+  * WebP quality config
+
+ -- Damien Hardy <dhardy@smtp.gmail.com>  Thu, 05 Dec 2013 14:52:35 +0100
+
+thumbor (3.14.7) unstable; urgency=low
+
+  * Merged #197. Healthcheck now replied to HEAD requests.
+  * Fixes #204. Thumbor now allows users to specify that WebP should be automatically used whenever the request has the proper Accept header (image/webp).
+  * Added some extra logging to the finish request stage of the image handling.
+  * Merged #202. Proxy support added to default HTTP Loader.
+  * Fixed #193. File storage now uses atomic storage of files, thus avoiding corruption of stored images.
+  * A new filter has been introduced: max_bytes
+  * Thumbor now includes a "Vary": "Accept" header
+  * Not doing vary header or converting to WebP when image is an animated gif or already a WebP
+
+ -- Damien Hardy <dhardy@smtp.gmail.com>  Mon, 04 Nov 2013 15:52:39 +0100
+
+thumbor (3.12.0) unstable; urgency=low
+
+  * Fixed an issue with animated gifs (sigh);
+  * Add detection support for WEBP format. Merge pull request #194 from dhardy92:feature_Add_WEBP_Detection;
+  * Support for the new release of Pillow (2.1.0) and works with Pillow master branch for now.
+  * Added a configuration PRESERVE_EXIF_INFO that when set to True will keep the exif metadata 
+    in images intact (including webp resulting images)
+
+ -- Paulo Sousa <paulo.sousa@corp.globo.com>  Tue, 09 Jul 2013 14:59:12 +0200
+
+thumbor (3.10.0) unstable; urgency=low
+
+  * Thumbor now reports expected errors as warning, instead of errors.
+  * There's two new configuration keys: HTTP_LOADER_DEFAULT_USER_AGENT and HTTP_LOADER_FORWARD_USER_AGENT.
+  * Thumbor now features a grayscale filter.
+  * Code reformatting to conform to PEP-8.
+
+ -- Paulo Sousa <paulo.sousa@corp.globo.com>  Wed, 15 May 2013 14:55:54 +0200
+
+thumbor (3.9.4) unstable; urgency=low
+
+  * Upgraded Pillow dependency to 2.0.0;
+  * Normalized the Max Age header for images with smart detection errors. 
+  * Fixed an issue with sentry error handler
+  * New the http handler requests images. 
+
+ -- Paulo Sousa <paulo.sousa@corp.globo.com>  Thu, 18 Apr 2013 10:56:45 +0200
+
+thumbor (3.9.3) unstable; urgency=low
+
+  * Fixes #165. Setting the ALLOW_ANIMATED_GIFS configuration to False will remove the experimental support for animated gifs.
+  * Makes error handling a little safer.
+  * Logging format can now be configured using THUMBOR_LOG_FORMAT and THUMBOR_LOG_DATE_FORMAT configuration variables. These are just passed through to python's format and datefmt arguments of the logging.basicConfig method.
+
+ -- Paulo Sousa <paulo.sousa@corp.globo.com>  Mon, 15 Apr 2013 16:00:04 +0200
+
+thumbor (3.8.1) unstable; urgency=low
+
+  * Fixes #175. Thumbor now support custom error handling. This can be very useful for users that have a centralized error application (like sentry).
+  * Sentry's custom error handler comes built-in with thumbor.
+  * Optimized fill filter, which is now implemented in C (by fabiomcosta).
+
+ -- Paulo Sousa <paulo.sousa@corp.globo.com>  Wed, 27 Mar 2013 00:00:00 +0100
+
 thumbor (3.7.1) unstable; urgency=low
 
   * Fix bug with quoting valid characters in URL (by cdemonchy);
