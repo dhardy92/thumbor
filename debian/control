@@ -23,6 +23,7 @@ Build-Depends:
  libwebpdemux1,
  libwebpmux1,
  libwebp5,
+ gifsicle
 X-Python-Version: current
 Homepage: https://github.com/globocom/thumbor/wiki
 Vcs-Git: git://github.com/globocom/thumbor.git
