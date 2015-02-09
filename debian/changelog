@@ -1,3 +1,9 @@
+thumbor (4.8.6-2) unstable; urgency=low
+
+  * Upstream release
+
+ -- Damien Hardy <dhardy@viadeoteam.com>  Mon, 09 Feb 2015 15:00:59 +0100
+
 thumbor (4.8.6-1) unstable; urgency=low
 
   * Upstream release
