@@ -1,6 +1,7 @@
 #!/usr/bin/make -f
 
 PYTHON2		?= $(shell pyversions -vr)
+PYTHONPATH=debian/thumbor/usr/lib/python2.6/dist-packages/:./
 
 # copy good script for upstart capable system or not
 ifeq ($(shell dpkg-vendor --derives-from Ubuntu && echo yes),yes)
@@ -39,6 +40,8 @@ binary-arch: build-arch
 	cp $(PREPINITSRC) $(PREPINITDST)
 	dh_install --exclude=.c
 	dh_python2
+	rm vows/redis* vows/mongo* vows/sentry*
+	export PYTHONPATH=$(PYTHONPATH); /usr/local/bin/pyvows -vvv --profile --no-color vows/
 	dh_strip
 	dh_shlibdeps
 	dh_installdirs
