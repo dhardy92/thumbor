@@ -1,3 +1,12 @@
 #!/bin/sh
-apt-get -y install libxslt-dev libxml2-dev python-pip python-pycurl python-dev libcurl4-openssl-dev && \
+apt-get -y install libxslt-dev libxml2-dev python-pip python-pycurl python-dev libcurl4-openssl-dev rubygems ruby1.8-dev && \
 pip install 'simplejson>=2.1.6,<2.2.0' 'pyvows' 'preggy' 'tornado-pyvows' 'coverage' 'nose' 'colorama' 'numpy'
+
+apt-get source -t jessy libwebp
+{ cd libwebp* && debuild -i -us -uc -b )
+
+
+gem install fpm
+for i in pillow statsd pexif; do
+  fpm -s python -t deb $i && dpkg -i ./python-${i}_*.deb
+done

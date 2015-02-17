@@ -20,9 +20,7 @@ Build-Depends:
  python-magic,
  python-pexif,
  python-statsd,
- libwebpdemux1,
- libwebpmux1,
- libwebp5,
+ libwebp-dev,
  gifsicle
 X-Python-Version: current
 Homepage: https://github.com/globocom/thumbor/wiki
@@ -47,9 +45,7 @@ Depends:
  python-magic,
  python-pexif,
  python-statsd,
- libwebpdemux1,
- libwebpmux1,
- libwebp5
+ libwebp5 | libwebp2
 Recommends: python-redis, gifsicle
 Provides: ${python:Provides}
 Description: Smart imaging service enabling on-demand crop image manipluation.
