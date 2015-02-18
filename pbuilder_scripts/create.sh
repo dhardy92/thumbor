@@ -3,7 +3,7 @@ mkdir -p pbuilder/build
 sudo pbuilder create \
   --distribution wheezy \
   --mirror ftp://ftp.us.debian.org/debian/ \
-  --othermirror "deb http://debrepo01.sf.viadeo.local/debian wheezy main contrib non-free|deb http://debrepo01.sf.viadeo.local/debian demo main contrib non-free|deb-src http://security.debian.org/ jessie/updates main contrib non-free|deb-src http://ftp.debian.org/debian/ jessie main contrib non-free" \
+  --othermirror "deb http://debrepo01.sf.viadeo.local/debian wheezy main contrib non-free|deb http://debrepo01.sf.viadeo.local/debian demo main contrib non-free|deb-src http://ftp.debian.org/debian/ jessie main contrib non-free" \
   --debootstrapopts "--keyring=$PWD/pbuilder_scripts/keyring.gpg" \
   --basetgz ./wheezy64-viadeo.tgz \
   --buildplace pbuilder/build \
