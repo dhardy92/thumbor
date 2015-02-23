@@ -7,5 +7,5 @@ apt-get source libwebp && \
 dpkg -i libwebp5*.deb libwebp-dev*.deb libwebpdemux1*.deb libwebpmux1*.deb && \
 gem install fpm && \
 for i in pillow statsd pexif derpconf thrift hbase-thrift thumbor_hbase; do
-  fpm -s python -t deb $i && dpkg -i ./python-${i}_*.deb
+  fpm -s python -t deb $i && dpkg -i ./python-${i//_/-}_*.deb
 done
