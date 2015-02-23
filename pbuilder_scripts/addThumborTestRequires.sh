@@ -6,6 +6,6 @@ apt-get source libwebp && \
 ( cd libwebp* && apt-get build-dep -y libwebp && debuild -i -us -uc -b ) && \
 dpkg -i libwebp5*.deb libwebp-dev*.deb libwebpdemux1*.deb libwebpmux1*.deb && \
 gem install fpm && \
-for i in pillow statsd pexif derpconf thrift hbase-thrift thumbor_hbase; do
-  fpm -s python -t deb $i && dpkg -i ./python-${i//_/-}_*.deb
+for i in pillow statsd pexif derpconf; do
+  fpm -s python -t deb $i && dpkg -i ./python-${i}_*.deb
 done
