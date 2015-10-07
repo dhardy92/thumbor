@@ -41,7 +41,7 @@ binary-arch: build-arch
 	dh_install --exclude=.c
 	dh_python2
 	rm vows/redis* vows/mongo* vows/sentry*
-	export PYTHONPATH=$(PYTHONPATH); /usr/local/bin/pyvows -vvv --profile --no-color vows/
+	export PYTHONPATH=$(PYTHONPATH); export LC_ALL=en_US.UTF-8; /usr/local/bin/pyvows -vvv --profile --no-color vows/
 	dh_strip
 	dh_shlibdeps
 	dh_installdirs
