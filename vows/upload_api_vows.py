@@ -36,7 +36,7 @@ file_path = ''
 #   - too weight image : JPEG 300x400, 85.32 KB
 ##
 def valid_image():
-    path = abspath(join(dirname(__file__), u'fixtures/alabama1_ap620é.jpg'))
+    path = abspath(join(dirname(__file__), u'fixtures/alabama1_ap620_.jpg'))
     with open(path, 'r') as stream:
         body = stream.read()
     return body
