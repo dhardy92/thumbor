@@ -105,7 +105,7 @@ Config.define('ENABLE_ETAGS', True, 'Enables automatically generated etags', 'HT
 Config.define('MAX_ID_LENGTH', 32, 'Set maximum id length for images when stored', 'Storage')
 
 # METRICS OPTIONS
-Config.define('STATSD_HOST', None, 'Host to send statsd instrumentation to', 'Metrics')
+Config.define('STATSD_HOST', 'localhost', 'Host to send statsd instrumentation to', 'Metrics')
 Config.define('STATSD_PORT', 8125, 'Port to send statsd instrumentation to', 'Metrics')
 Config.define('STATSD_PREFIX', None, 'Prefix for statsd', 'Metrics')
 
