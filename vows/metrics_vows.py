@@ -51,6 +51,7 @@ class MetricsVows(Vows.Context):
         def topic(self):
             conf = Config()
             conf.METRICS = 'thumbor.metrics.statsd_metrics'
+            conf.STATSD_HOST = '127.0.0.1'
             imp = Importer(conf)
             imp.import_modules()
             return Context(None, conf, imp)
